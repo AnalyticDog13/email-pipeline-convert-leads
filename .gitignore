@@ -1,0 +1,6 @@
+.env
+sent_log.json
+*.csv
+__pycache__/
+.pytest_cache/
+*.pyc
