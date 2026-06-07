@@ -39,6 +39,7 @@ def test_upload_lead_sends_correct_payload(mock_post):
     assert payload["campaign_id"] == "camp456"
     assert payload["leads"][0]["email"] == "test@biz.com"
     assert payload["leads"][0]["custom_variables"]["business_name"] == "Test Biz"
+    assert payload["leads"][0]["custom_variables"]["business_type"] == "barber shops"
     assert payload["leads"][0]["custom_variables"]["cta_type"] == "booking"
     assert payload["skip_if_in_workspace"] is True
 
