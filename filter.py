@@ -3,7 +3,7 @@ def tier_leads(leads, sent_ids):
     for row in leads:
         if not row.get("email", "").strip():
             continue
-        if row["id"] in sent_ids:
+        if row.get("id", "") in sent_ids:
             continue
         if row.get("worth_reaching_out") == "1":
             tier1.append(row)

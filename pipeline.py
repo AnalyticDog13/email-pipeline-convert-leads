@@ -2,22 +2,25 @@ import argparse
 import csv
 import logging
 import sys
+import time
 
 from config import INSTANTLY_API_KEY, INSTANTLY_CAMPAIGN_HAS_WEBSITE, INSTANTLY_CAMPAIGN_NO_WEBSITE
 from filter import tier_leads
 from template import build_payload
-from tracker import load_sent_ids, record_sent
+from tracker import load_sent_ids, record_sent, SENT_LOG_PATH
 from instantly import upload_lead
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-SENT_LOG = "sent_log.json"
-
 
 def load_csv(path):
-    with open(path, newline="", encoding="utf-8") as f:
-        return list(csv.DictReader(f))
+    try:
+        with open(path, newline="", encoding="utf-8") as f:
+            return list(csv.DictReader(f))
+    except FileNotFoundError:
+        logger.error("CSV file not found: %s", path)
+        sys.exit(1)
 
 
 def validate_config():
@@ -34,8 +37,7 @@ def validate_config():
         sys.exit(1)
 
 
-def process_tier(leads, tier_number, sent_log_path):
-    sent_ids = load_sent_ids(sent_log_path)
+def process_tier(leads, tier_number, sent_log_path, sent_ids):
     uploaded = 0
     for row in leads:
         if row["id"] in sent_ids:
@@ -60,6 +62,7 @@ def process_tier(leads, tier_number, sent_log_path):
             sent_ids.add(row["id"])
             uploaded += 1
             logger.info("[Tier %d] Uploaded: %s (%s)", tier_number, payload["business_name"], payload["email"])
+            time.sleep(0.15)
         except Exception as e:
             logger.error("[Tier %d] Failed to upload %s: %s", tier_number, row.get("business_name"), e)
     return uploaded
@@ -74,7 +77,7 @@ def main():
     validate_config()
 
     rows = load_csv(args.csv)
-    sent_ids = load_sent_ids(SENT_LOG)
+    sent_ids = load_sent_ids(SENT_LOG_PATH)
     tier1, tier2, tier3 = tier_leads(rows, sent_ids=sent_ids)
 
     logger.info("Leads found — Tier 1: %d | Tier 2: %d | Tier 3: %d", len(tier1), len(tier2), len(tier3))
@@ -88,7 +91,7 @@ def main():
 
     total = 0
     for tier_num, leads in [(1, tier1), (2, tier2), (3, tier3)]:
-        total += process_tier(leads, tier_num, SENT_LOG)
+        total += process_tier(leads, tier_num, SENT_LOG_PATH, sent_ids)
 
     logger.info("Done. Uploaded %d leads.", total)
 
