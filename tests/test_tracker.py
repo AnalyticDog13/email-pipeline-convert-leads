@@ -1,5 +1,4 @@
 import json
-import pytest
 from tracker import load_sent_ids, record_sent
 
 
